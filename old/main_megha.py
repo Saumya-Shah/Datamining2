@@ -7,7 +7,7 @@ Created on Sat Mar 21 22:20:06 2020
 from class_definition import *
 import numpy as np
 import matplotlib.pyplot as plt
-
+from helper_megha import *
 
         
 if __name__ == '__main__':
