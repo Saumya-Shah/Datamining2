@@ -20,12 +20,12 @@ if __name__ == '__main__':
     #Uncomment the next line to see 10 random images 
     # random_image_display(10,train)
     
-    
+    #QUESTION 2
     # -----------------
     #HYPERPARAMETERS FOR PEGASUS
-    regu_para = 0.1
-    num_iter = 4000
-    batch_size = 100
+    regu_para = 0.5
+    num_iter = 1000
+    batch_size = 500
     # -----------------
     
     #Convert data to model-friendly format
@@ -56,12 +56,12 @@ if __name__ == '__main__':
     print("Train accuracy with Pegasus is", train_final_accuracy_Pega*100)
     print("Test accuracy with Pegasus is", test_final_accuracy_Pega*100)
     
-    
+    #QUESTION 3    
     # -----------------
     #HYPERPARAMETERS FOR PEGASUS WITH ADAGRAD
-    regu_para = 0.1
-    num_iter = 200
-    batch_size = 100
+    regu_para = 0.5
+    num_iter = 1000
+    batch_size = 500
     # -----------------
     w,train_accu,test_accu = \
         Pega_with_Ada(regu_para,num_iter,batch_size,train_data,train_labels_bin,test_data,test_labels_bin)
@@ -88,7 +88,7 @@ if __name__ == '__main__':
     print("Train accuracy with Pegasus and Adagrad is", train_final_accuracy_Ada*100)
     print("Test accuracy with Pegasus and Adagrad is", test_final_accuracy_Ada*100)
     
-    
+    #QUESTION 3   
     # -----------------
     #HYPERPARAMETERS FOR MULTICLASS ADA
     regu_para = 0.1
@@ -156,6 +156,6 @@ if __name__ == '__main__':
     #### Training and testing
     classes = ['two','five','seven']
 
-    net=train_data_func(trainloader)
-    test_data_func(classes,net,testloader)
-    
+    train_data_func(trainloader,epochs,classes,testloader,batch_size)
+#    test_data_func(classes,net,testloader)
+#    

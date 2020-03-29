@@ -104,6 +104,18 @@ def multiclass_result(w25,w27,w57,train_data_56):
     temp[(temp==-109)+(temp==-111)] = 7
     temp[(temp==109)+(temp==89)] = 5
     temp[(temp==-89)+(temp==111)] = 2
+    #handling other cases
+    temp2 = (temp!=2) * (temp!=5) * (temp!=7)
+    others = np.argwhere(temp2!=0)
+    if others.shape[0]!=0:
+      train_others = train_data_56[others].reshape(-1,785)
+      sum_others = np.hstack(((np.sum(w25*train_others,axis = 1)).reshape(-1,1),(np.sum(w27*train_others,axis = 1)).reshape(-1,1),(np.sum(w57*train_others,axis = 1)).reshape(-1,1)))
+      temp_others = np.zeros((train_others.shape[0]))
+      args = np.argmax(abs(sum_others),axis=1)
+      temp_others[args==0] = 2*(sum_others[:,0][args==0]>0) + 5*(sum_others[:,0][args==0]<0)
+      temp_others[args==1] = 2*(sum_others[:,1][args==1]>0) + 7*(sum_others[:,1][args==1]<0)
+      temp_others[args==2] = 5*(sum_others[:,2][args==2]>0) + 7*(sum_others[:,2][args==2]<0)
+      temp[(temp!=2) * (temp!=5) * (temp!=7)] = temp_others
     return temp
     
 
@@ -216,10 +228,39 @@ def prepare_testing_data(test_filtered_56_labels,test_filtered_56,test_labels):
     for i in range(test_filtered_56_labels.shape[0]):
       test_loader_ip.append((torch.Tensor(test_filtered_56[i].reshape(1,28,28)),int(test_labels[i])))
 
-    testloader = torch.utils.data.DataLoader(test_loader_ip,batch_size=64)
+    testloader = torch.utils.data.DataLoader(test_loader_ip,batch_size=len(test_filtered_56))
     return testloader
 
-def train_data_func(trainloader):
+
+
+def test_data_func(classes,net,testloader):  
+    
+    
+    class_correct = list(0. for i in range(len(classes)))
+    class_total = list(0. for i in range(len(classes)))
+    
+    with torch.no_grad():
+    
+        for data in testloader:
+            images, labels = data
+            outputs = net(images)
+            _, predicted = torch.max(outputs, 1)
+            c = (predicted == labels).squeeze()
+            for i in range(len(labels)):
+                label = labels[i]
+                class_correct[label] += c[i].item()
+                class_total[label] += 1
+
+
+#    for i in range(len(classes)):
+#        print('Accuracy of %5s : %2d %%' % (
+#            classes[i], 100 * class_correct[i] / class_total[i]))
+        
+        return sum(class_correct)/sum(class_total)
+
+
+
+def train_data_func(trainloader,epochs,classes,testloader,batch_size):
     
     
     net = Net()
@@ -234,8 +275,8 @@ def train_data_func(trainloader):
     total=0
     acc_values = []
     loss_values = []
-
-    for epoch in range(3):  # loop over the dataset multiple times
+    test_accuracy=[]
+    for epoch in range(epochs):  # loop over the dataset multiple times
 
         running_loss = 0.0
         running_corrects=0.0
@@ -253,44 +294,34 @@ def train_data_func(trainloader):
             running_loss += loss.item()
             running_corrects += torch.sum(preds == labels).item()
  
+           
             
             if i % 100 == 99:    # print every 100 mini-batches
                 print('Epoch: %d, Batch: %5d, loss: %.3f' %
                         (epoch + 1, i + 1, running_loss / 100))
-                running_loss = 0.0
-    
-                
-        loss_values.append(running_loss/len(trainloader))
-        acc_values.append(running_corrects / len(trainloader))      
-
+                #running_loss = 0.0
+   
+        test_accu=test_data_func(classes,net,testloader)       
+        loss_values.append((running_loss/len(trainloader)*batch_size))
+        acc_values.append(running_corrects / (len(trainloader)*batch_size)) 
+        test_accuracy.append(test_accu)
+#        print("test accuracy", test_accu)
+        
     print('Finished Training')
+    plt.clf()
     plt.plot(np.array(loss_values), 'r')
-    plt.show()
+    plt.savefig("results/Lossvalues_train_nn.png")
+    plt.clf()
     plt.plot(np.array(acc_values), 'r')
-    return net
-
-
-
-
-def test_data_func(classes,net,testloader):  
+    plt.savefig("results/Accuracyvalues_train_nn.png")
+    plt.clf()
+    plt.plot(np.array(test_accuracy), 'r')
+    plt.savefig("results/Accuracyvalues_test_nn.png")
     
-    
-    class_correct = list(0. for i in range(len(classes)))
-    class_total = list(0. for i in range(len(classes)))
-    
-    with torch.no_grad():
-    
-        for data in testloader:
-            images, labels = data
-            outputs = net(images)
-            _, predicted = torch.max(outputs, 1)
-            c = (predicted == labels).squeeze()
-            for i in range(4):
-                label = labels[i]
-                class_correct[label] += c[i].item()
-                class_total[label] += 1
+    print("final test accuracy",test_accuracy[-1])
+    print("final train accuracy",acc_values[-1])
+#    return net
 
 
-    for i in range(3):
-        print('Accuracy of %5s : %2d %%' % (
-            classes[i], 100 * class_correct[i] / class_total[i]))
+
+
